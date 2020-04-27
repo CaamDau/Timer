@@ -14,6 +14,7 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/CaamDau/Timer.git', :tag => s.version }
 
   s.ios.deployment_target = '9.0'
+  s.swift_version = ['4.0', '4.2', '5.0']
   s.source_files = 'Timer/**/*'
   s.frameworks = 'Foundation'
   s.dependency 'CaamDauExtension'
