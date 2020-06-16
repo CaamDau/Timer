@@ -9,22 +9,22 @@
 
 import Foundation
 import CaamDauExtension
-public protocol CD_TimerProtocol {
-    func cd_timer(withModel model:CD_Timer.Model, id:String)
+public protocol TimeProtocol {
+    func time(withModel model:Time.Model, id:String)
 }
 
-public class CD_Timer {
+public class Time {
     private init(){}
-    public static let shared:CD_Timer = CD_Timer()
+    public static let shared:Time = Time()
     ///时间倒计时标识存储 - 区别每个计时队列
-    private var timers:[String:CD_Timer.Timer] = [:]
+    private var timers:[String:Time.Timer] = [:]
     
     public static func remove(_ id:String) {
-        CD_Timer.shared.timers.removeValue(forKey: id)
+        Time.shared.timers.removeValue(forKey: id)
     }
 }
 
-extension CD_Timer {
+extension Time {
     /// 计时器
     public class Timer {
         private init(){}
@@ -51,9 +51,9 @@ extension CD_Timer {
     }
     /// 回调类型
     public enum Style {
-        case delegate(_ d:CD_TimerProtocol, _ tag:String, _ remainTime:TimeInterval, _ repeatSecond:Double)
+        case delegate(_ d:TimeProtocol, _ tag:String, _ remainTime:TimeInterval, _ repeatSecond:Double)
         case notification(_ tag:String, _ remainTime:TimeInterval, _ repeatSecond:Double)
-        case callBack( _ tag:String, _ remainTime:TimeInterval, _ repeatSecond:Double, _ block:((CD_Timer.Model)->Void))
+        case callBack( _ tag:String, _ remainTime:TimeInterval, _ repeatSecond:Double, _ block:((Time.Model)->Void))
     }
     
     /// 计时模型
@@ -72,29 +72,29 @@ extension CD_Timer {
 }
 
 
-public extension CD_Timer {
+public extension Time {
     class func make(id:String,
                     remainTime:TimeInterval,
                     repeatSecond:Double,
-                    mainThread block:@escaping ((CD_Timer.Model) -> Void),
+                    mainThread block:@escaping ((Time.Model) -> Void),
                     qos:DispatchQoS = .default){
-        guard !CD_Timer.shared.timers.keys.contains(id) else {return}
+        guard !Time.shared.timers.keys.contains(id) else {return}
         // 监听用户手动改变系统时间 UIApplicationSignificantTimeChangeNotification
         /*
          NotificationCenter.default.addObserver(forName: UIApplication.Significant.timeChangeNotification, object: nil, queue: nil) { (n) in
          
          }*/
         /// 当前时间
-        let endTime = Date().cd_timestamp()+remainTime
-        let endDate = endTime.cd_date()
-        let time = CD_Timer.Model()
+        let endTime = Date().cd.timestamp()+remainTime
+        let endDate = endTime.cd.date()
+        let time = Time.Model()
         time.remainTime = endTime
-        CD_Timer.shared.timers[id] = CD_Timer.Timer(id: id, repeatSecond: repeatSecond, handler: { () -> Bool in
+        Time.shared.timers[id] = Time.Timer(id: id, repeatSecond: repeatSecond, handler: { () -> Bool in
             /// 当前时间 与 结束时间间隔 即剩余时间
             let nowDate2 = Date()
-            let nowTime2 = nowDate2.cd_timestamp()
+            let nowTime2 = nowDate2.cd.timestamp()
             let interval = endTime - nowTime2
-            let coms = nowDate2.cd_interval(endDate)
+            let coms = nowDate2.cd.interval(endDate)
             if interval <= 0 {
                 time.year = 0
                 time.month = 0
@@ -104,7 +104,7 @@ public extension CD_Timer {
                 time.second = 0
                 time.millisecond = 0
                 time.remainTime = 0
-                CD_Timer.shared.timers.removeValue(forKey: id)
+                Time.shared.timers.removeValue(forKey: id)
             }else{
                 time.year = coms.year ?? 0
                 time.month = coms.month ?? 0
@@ -121,38 +121,38 @@ public extension CD_Timer {
         }, qos:qos)
     }
 }
-public extension CD_Timer {
-    class func make(_ style:CD_Timer.Style, qos:DispatchQoS = .default) {
+public extension Time {
+    class func make(_ style:Time.Style, qos:DispatchQoS = .default) {
         switch style {
         case let .delegate(d, id, time, second):
-            CD_Timer.make(id: id, remainTime: time, repeatSecond: second, mainThread: { (model) in
-                d.cd_timer(withModel: model, id:id)
+            Time.make(id: id, remainTime: time, repeatSecond: second, mainThread: { (model) in
+                d.time(withModel: model, id:id)
             }, qos: qos)
         case let .notification(id, time, second):
-            CD_Timer.make(id: id, remainTime: time, repeatSecond: second, mainThread: { (model) in
+            Time.make(id: id, remainTime: time, repeatSecond: second, mainThread: { (model) in
                 NotificationCenter.default.post(name: Notification.Name(id), object: id, userInfo: [id:model])
             }, qos: qos)
         case let .callBack(id, time, second, block):
-            CD_Timer.make(id: id, remainTime: time, repeatSecond: second, mainThread: block, qos: qos)
+            Time.make(id: id, remainTime: time, repeatSecond: second, mainThread: block, qos: qos)
         }
     }
 }
-public extension CD_Timer {
+public extension Time {
     /// 剩余时间转换 - *提供一个参照样例*
     class func remainTime<T>(_ time:T) -> TimeInterval {
         switch time {
         case let t as String:
-            guard let date = t.cd_date() else{
+            guard let date = t.cd.date() else{
                 return 0
             }
-            return date.cd_timestamp() - Date().cd_timestamp()
+            return date.cd.timestamp() - Date().cd.timestamp()
         case let t as (String, String):
-            guard let date = t.0.cd_date(t.1) else{
+            guard let date = t.0.cd.date(t.1) else{
                 return 0
             }
-            return date.cd_timestamp() - Date().cd_timestamp()
+            return date.cd.timestamp() - Date().cd.timestamp()
         case let t as Date:
-            return t.cd_timestamp() - Date().cd_timestamp()
+            return t.cd.timestamp() - Date().cd.timestamp()
         default:
             return 0
         }
@@ -160,8 +160,8 @@ public extension CD_Timer {
 }
 
 //MARK:--- 延时执行 ----------
-public extension CD_Timer {
-    /// 如果时间大于 30 建议使用 CD_Timer.make
+public extension Time {
+    /// 如果时间大于 30 建议使用 Time.make
     class func after(_ time:Double, _ block:@escaping (() -> Void)){
         DispatchQueue.main.asyncAfter(deadline: .now() + time, execute: block)
         /*
